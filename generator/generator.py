@@ -12,7 +12,6 @@ import winreg
 import time
 import threading
 from turtle import *
-import math
 from time import ctime, sleep
 
 
@@ -282,22 +281,24 @@ def backupFile(filePath):
     print('file was copied')
 
 
-# Main
-tableCount = 1
-boardsCount = 20
-
-# first check the lins valid
-if not linsValid():
-    print("error!we need a .lin file")
-    input("Press Enter to quit:")
-    quit()
-# secondly choose a template and make a copy
-genWord()
-linFiles = glob.glob(get_desktop() + r"\*.lin")
-firstFile = linFiles[0]
-# data record
-record = []
-handlelin(firstFile)
+# # Main
+# tableCount = 1
+# boardsCount = 20
+#
+# # first check the lins valid
+# if not linsValid():
+#     print("error!we need a .lin file")
+#     input("Press Enter to quit:")
+#     quit()
+# # secondly choose a template and make a copy
+# genWord()
+# linFiles = glob.glob(get_desktop() + r"\*.lin")
+# firstFile = linFiles[0]
+# # data record
+# record = []
 # handlelin(firstFile)
-print(r"Finished!")
-input()
+# # handlelin(firstFile)
+# print(r"Finished!")
+# input()
+
+
