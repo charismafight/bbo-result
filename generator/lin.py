@@ -7,6 +7,7 @@ class Lin(object):
     def __init__(self, file_url):
         self.file_url = file_url
         self.__content = None
+        self.fetch_retry_times = 0
 
     @property
     def content(self):
@@ -26,10 +27,18 @@ class Lin(object):
         """
         pass
 
-    def fetch_file(self):
+    def fetch_file(self, conn):
         """
         fetch file by url
         eg:http://www.bridgebase.com/myhands/fetchlin.php?id=1535437396&when_played=1514118898
-        :return:
+        :return: void
         """
-        pass
+        req = conn.get(self.file_url, verify=False, stream=True)
+        if req.status_code != 200 and self.fetch_retry_times <= 10:
+            print(
+                'error when getting ', self.file_url, ' http_error_code:', str(req.status_code),
+                str(self.fetch_retry_times) + ',retries')
+            self.fetch_retry_times += 1
+            self.fetch_file(conn)
+            return
+        print(req.content)
