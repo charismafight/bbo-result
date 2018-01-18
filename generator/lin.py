@@ -88,7 +88,7 @@ class Lin(object):
         # ok
         self.fetch_status = 1
         self.content = req.content.decode()
-        # print(self.content)
+        print(self.file_url + ' fetched.')
 
     def __str__(self):
         return self.content

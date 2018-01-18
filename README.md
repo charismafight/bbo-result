@@ -1,5 +1,7 @@
 This is a tool for export bbo results(lin files)
 
+[lin file structure](http://www.bridgebase.com/help/v2help/handviewer.html)
+
 
 
 Dependencies

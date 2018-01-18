@@ -13,6 +13,7 @@ import time
 import threading
 from turtle import *
 from time import ctime, sleep
+from generator import fetcher
 
 
 def get_desktop():
@@ -30,11 +31,12 @@ def cur_file_dir():
         return os.path.dirname(path)
 
 
-RESULTPATH = get_desktop() + "\\" + "Result.docx"
+CURRENT_FOLDER = cur_file_dir()
+# todo set file name as yyyymmddhhmm.docx
+RESULTPATH = CURRENT_FOLDER + r"\results\Result.docx"
 # lin file path should be modified ***********************************************
-FILES = os.listdir(get_desktop())
-REGSTR1 = r"qx\|(.+)\|pn\|(.+)\|md\|(\d)(.+)\|sv\|(\w)\|rh\|\|ah\|(Board\s\d+)\|mb\|(.+)\|mb\|p\|mb\|p\|mb\|p\|pg\|\|$"
-REGSTR2 = r"qx\|(.+)\|pn\|(.+)\|st\|.*\|md\|(\d)(.+)\|rh\|(.*)\|ah\|(.+)\|sv\|(\w)\|mb\|(.+)\|mb\|p\|mb\|p\|mb\|p\|pg\|\|pc\|(.+)\|pg\|\|$"
+REGSTR1 = r"pn\|(.+)\|md\|(\d)(.+)\|sv\|(\w)\|rh\|\|ah\|(Board\s\d+)\|mb\|(.+)\|mb\|p\|mb\|p\|mb\|p\|pg\|\|$"
+REGSTR2 = r"pn\|(.+)\|st\|.*\|md\|(\d)(.+)\|rh\|(.*)\|ah\|(.+)\|sv\|(\w)\|mb\|(.+)\|mb\|p\|mb\|p\|mb\|p\|pg\|\|pc\|(.+)\|(pg\|\||mc\|[\s\S]{1,2}\|)$"
 
 
 def sortstr(str11):
@@ -65,14 +67,15 @@ def getAvailableTable(doc, boardNO):
     # path:output file
 
 
-def handlelin(filePath):
+def handlelin(file_path):
     # according to the user input table count
-    f = open(filePath)
-    line = f.readlines()
+    f = open(file_path)
+    lines = f.readlines()
     f.close()
 
-    # no mre results
-    results = str.replace(re.match(r"^rs\|(.+),\|$", line[1]).group(1), ',,', ',').split(r",")
+    f = open(file_path.replace('lin', 'result'))
+    results = f.readlines()
+    f.close()
 
     try:
         pythoncom.CoInitialize()
@@ -80,8 +83,7 @@ def handlelin(filePath):
         w.Visible = 0
         w.DisplayAlerts = 0
         doc = w.Documents.Open(RESULTPATH)
-        info2 = line[6:]
-        for s in info2:
+        for result_num, s in enumerate(lines):
             if s in record:
                 print("repeated data,pass!")
                 continue
@@ -96,14 +98,13 @@ def handlelin(filePath):
             #     # string7 = ""
             #     pass
             # else:
-            string0 = re.match(REGSTR2, s).group(1)
-            string1 = re.match(REGSTR2, s).group(2)
-            flag = re.match(REGSTR2, s).group(3)
-            cards = re.match(REGSTR2, s).group(4)
-            board = re.match(REGSTR2, s).group(6)
-            vul = re.match(REGSTR2, s).group(7)
-            string6 = re.match(REGSTR2, s).group(8)
-            string7 = re.match(REGSTR2, s).group(9)
+            player_str = re.match(REGSTR2, s).group(1)
+            flag = re.match(REGSTR2, s).group(2)
+            cards = re.match(REGSTR2, s).group(3)
+            board = re.match(REGSTR2, s).group(5)
+            vul = re.match(REGSTR2, s).group(6)
+            string6 = re.match(REGSTR2, s).group(7)
+            string7 = re.match(REGSTR2, s).group(8)
 
             if flag == "3":
                 flag1 = 1
@@ -116,13 +117,12 @@ def handlelin(filePath):
 
             # key arithmetic we need count the tableNO to focus the correct table
             # table and reusltNum differentiate
-            resultNum = int(re.match(r'^o(\d+)', string0).group(1)) - 1
-            tnum = getAvailableTable(doc, resultNum)
+            tnum = getAvailableTable(doc, result_num)
 
             if tnum == -1:
                 continue
 
-            players = string1.split(r",")
+            players = player_str.split(r",")
             # while "" in players:
             #    players.remove("")
             for i in range(len(players)):
@@ -133,45 +133,43 @@ def handlelin(filePath):
                 else:
                     doc.Tables[tnum].Rows[i + 17].Cells[0].Range.Text = players[(i + 1) % 4] + r": "
             cards = cards.split(',')
+            SUIT_TYPE_REGSTR = r"S(.*)H(.*)D(.*)C(.*)$"
             if cards[0] != '':
-                scards_s = re.match(r"S(.*)H(.*)D(.*)C(.*)$", cards[0]).group(1)
+                scards_s = re.match(SUIT_TYPE_REGSTR, cards[0]).group(1)
                 doc.Tables[tnum].Rows[8].Cells[1].Range.Text = u"\u2660 " + sortstr(scards_s)
-                scards_h = re.match(r"S(.*)H(.*)D(.*)C(.*)$", cards[0]).group(2)
+                scards_h = re.match(SUIT_TYPE_REGSTR, cards[0]).group(2)
                 doc.Tables[tnum].Rows[9].Cells[1].Range.Text = u"\u2665 " + sortstr(scards_h)
-                scards_d = re.match(r"S(.*)H(.*)D(.*)C(.*)$", cards[0]).group(3)
+                scards_d = re.match(SUIT_TYPE_REGSTR, cards[0]).group(3)
                 doc.Tables[tnum].Rows[10].Cells[1].Range.Text = u"\u2666 " + sortstr(scards_d)
-                scards_c = re.match(r"S(.*)H(.*)D(.*)C(.*)$", cards[0]).group(4)
+                scards_c = re.match(SUIT_TYPE_REGSTR, cards[0]).group(4)
                 doc.Tables[tnum].Rows[11].Cells[1].Range.Text = u"\u2663 " + sortstr(scards_c)
 
             if cards[1] != '':
-                wcards_s = re.match(r"S(.*)H(.*)D(.*)C(.*)$", cards[1]).group(1)
+                wcards_s = re.match(SUIT_TYPE_REGSTR, cards[1]).group(1)
                 doc.Tables[tnum].Rows[4].Cells[0].Range.Text = u"\u2660 " + sortstr(wcards_s)
-                wcards_h = re.match(r"S(.*)H(.*)D(.*)C(.*)$", cards[1]).group(2)
+                wcards_h = re.match(SUIT_TYPE_REGSTR, cards[1]).group(2)
                 doc.Tables[tnum].Rows[5].Cells[0].Range.Text = u"\u2665 " + sortstr(wcards_h)
-                wcards_d = re.match(r"S(.*)H(.*)D(.*)C(.*)$", cards[1]).group(3)
+                wcards_d = re.match(SUIT_TYPE_REGSTR, cards[1]).group(3)
                 doc.Tables[tnum].Rows[6].Cells[0].Range.Text = u"\u2666 " + sortstr(wcards_d)
-                wcards_c = re.match(r"S(.*)H(.*)D(.*)C(.*)$", cards[1]).group(4)
+                wcards_c = re.match(SUIT_TYPE_REGSTR, cards[1]).group(4)
                 doc.Tables[tnum].Rows[7].Cells[0].Range.Text = u"\u2663 " + sortstr(wcards_c)
             if cards[2] != '':
-                ncards_s = re.match(r"S(.*)H(.*)D(.*)C(.*)$", cards[2]).group(1)
+                ncards_s = re.match(SUIT_TYPE_REGSTR, cards[2]).group(1)
                 doc.Tables[tnum].Rows[0].Cells[1].Range.Text = u"\u2660 " + sortstr(ncards_s)
-                ncards_h = re.match(r"S(.*)H(.*)D(.*)C(.*)$", cards[2]).group(2)
+                ncards_h = re.match(SUIT_TYPE_REGSTR, cards[2]).group(2)
                 doc.Tables[tnum].Rows[1].Cells[1].Range.Text = u"\u2665 " + sortstr(ncards_h)
-                ncards_d = re.match(r"S(.*)H(.*)D(.*)C(.*)$", cards[2]).group(3)
+                ncards_d = re.match(SUIT_TYPE_REGSTR, cards[2]).group(3)
                 doc.Tables[tnum].Rows[2].Cells[1].Range.Text = u"\u2666 " + sortstr(ncards_d)
-                ncards_c = re.match(r"S(.*)H(.*)D(.*)C(.*)$", cards[2]).group(4)
+                ncards_c = re.match(SUIT_TYPE_REGSTR, cards[2]).group(4)
                 doc.Tables[tnum].Rows[3].Cells[1].Range.Text = u"\u2663 " + sortstr(ncards_c)
-            ecards_s = "".join(
-                [i for i in list("AKQJT98765432") if i not in list(scards_s) + list(wcards_s) + list(ncards_s)])
+
+            ecards_s = "".join([i for i in list("AKQJT98765432") if i not in list(scards_s) + list(wcards_s) + list(ncards_s)])
             doc.Tables[tnum].Rows[4].Cells[2].Range.Text = u"\u2660 " + sortstr(ecards_s)
-            ecards_h = "".join(
-                [i for i in list("AKQJT98765432") if i not in list(scards_h) + list(wcards_h) + list(ncards_h)])
+            ecards_h = "".join([i for i in list("AKQJT98765432") if i not in list(scards_h) + list(wcards_h) + list(ncards_h)])
             doc.Tables[tnum].Rows[5].Cells[2].Range.Text = u"\u2665 " + sortstr(ecards_h)
-            ecards_d = "".join(
-                [i for i in list("AKQJT98765432") if i not in list(scards_d) + list(wcards_d) + list(ncards_d)])
+            ecards_d = "".join([i for i in list("AKQJT98765432") if i not in list(scards_d) + list(wcards_d) + list(ncards_d)])
             doc.Tables[tnum].Rows[6].Cells[2].Range.Text = u"\u2666 " + sortstr(ecards_d)
-            ecards_c = "".join(
-                [i for i in list("AKQJT98765432") if i not in list(scards_c) + list(wcards_c) + list(ncards_c)])
+            ecards_c = "".join([i for i in list("AKQJT98765432") if i not in list(scards_c) + list(wcards_c) + list(ncards_c)])
             doc.Tables[tnum].Rows[7].Cells[2].Range.Text = u"\u2663 " + sortstr(ecards_c)
 
             # ecards_s = "".join([i for i in list("AKQJT98765432") if i not in list(scards_s) + list(wcards_s) + list(ncards_s)])
@@ -182,7 +180,7 @@ def handlelin(filePath):
             # doc.Tables[tnum].Rows[6].Cells[2].Range.Text = u"\u2666 " + sortstr(ecards_d)
             # ecards_c = "".join([i for i in list("AKQJT98765432") if i not in list(scards_c) + list(wcards_c) + list(ncards_c)])
             # doc.Tables[tnum].Rows[7].Cells[2].Range.Text = u"\u2663 " + sortstr(ecards_c)
-            doc.Tables[tnum].Rows[16].Cells[0].Range.Text = r"Result: " + results[resultNum]
+            doc.Tables[tnum].Rows[16].Cells[0].Range.Text = r"Result: " + results[result_num]
             doc.Tables[tnum].Rows[0].Cells[0].Range.Text = board
             trick = string7.split(r"|pg||pc|")
             num1 = len(trick)
@@ -245,14 +243,14 @@ def handlelin(filePath):
 
 def genWord():
     # template file name rule:form_tableCount_boardCount.docx
-    formdoc = cur_file_dir() + "\\template\\" + r"form_practice.docx"
-    print("searching word")
+    formdoc = CURRENT_FOLDER + r"\template" + r"\form_practice.docx"
+    print("checking form_practice.docx")
     if not os.path.exists(formdoc):
-        # print("cant find template word??" + formdoc)
+        print("cant find template word??" + formdoc)
         input("Press Enter to quit:")
         quit()
     shutil.copyfile(formdoc, RESULTPATH)
-    print("file was copied")
+    print("done")
 
 
 def linsValid(linFiles):
@@ -276,8 +274,7 @@ def endWith(s, *endstring):
 
 
 def backupFile(filePath):
-    shutil.move(filePath,
-                "C:\\form_pairs\\historyLin\\" + time.strftime('%Y%m%d%H%M%S', time.localtime(time.time())) + ".lin")
+    shutil.move(filePath, "C:\\form_pairs\\historyLin\\" + time.strftime('%Y%m%d%H%M%S', time.localtime(time.time())) + ".lin")
     print('file was copied')
 
 
@@ -285,19 +282,28 @@ def backupFile(filePath):
 tableCount = 1
 boardsCount = 20
 
-linpath = sys.path[0] + r'\files\*.lin'
-linFiles = glob.glob(linpath)
+# tableCount = int(input("Please input table count:"))
+# boardsCount = int(input("Please input boards count:"))
+
+players = open('bbo_id').readlines()
+dir_path = sys.path[0] + "\\files\\" + time.strftime('%Y%m%d%H%M', time.localtime(time.time()))
+if not os.path.exists(dir_path):
+    os.makedirs(dir_path)
+
+lin_path = CURRENT_FOLDER + r'\files\*.lin'
+linFiles = glob.glob(lin_path)
 if not linsValid(linFiles):
     print("error!we need at least 1 *.lin file")
     input("Press Enter to quit:")
     quit()
 
 genWord()
-# changed for scraping data
-firstFile = linFiles[0]
 # data record
 record = []
-handlelin(firstFile)
-# handlelin(firstFile)
+# generate files by bbo_id
+for x in players:
+    file_path = dir_path + "\\{}.lin".format(x)
+    result = fetcher.fetch(file_path)
+    handlelin(file_path)
 print(r"Finished!")
 input()
