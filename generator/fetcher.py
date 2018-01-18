@@ -28,15 +28,25 @@ r = conn.post(hands_url, data=hands_data)
 # print(r.content.decode())
 
 
-start_time = int(time.mktime(time.strptime('2017-12-24', '%Y-%m-%d')))
-end_time = int(time.mktime(time.strptime('2017-12-27', '%Y-%m-%d')))
+start_time = int(time.mktime(time.strptime('2017-11-25', '%Y-%m-%d')))
+end_time = int(time.mktime(time.strptime('2017-12-25', '%Y-%m-%d')))
 url = 'http://www.bridgebase.com/myhands/hands.php?username=eve8392&start_time={}&end_time={}'.format(start_time,
                                                                                                       end_time)
 data = conn.get(url).content.decode()
 # print(data.content.decode())
 rows = re.findall(r'<tr class="team">([\w\W]*?)</tr>', data)
 url_prefix = 'http://www.bridgebase.com/myhands/'
+# todo <tr class="tourneySummary">[\S\s]*?Orange[\S\s]*?</tr> re find orange
+lins = []
 for x in rows:
-    print(url_prefix + re.search(r'<A HREF="(.*)">Lin</A>', x).group(1))
-    l = Lin(url_prefix + re.search(r'<A HREF="(.*)">Lin</A>', x).group(1))
-    l.fetch_file(conn)
+    # print(url_prefix + re.search(r'<A HREF="(.*)">Lin</A>', x).group(1))
+    print(x)
+    result = ''.join(
+        re.search(r'<td class="result">([1-7])<span style="[\s\S]*?">([\s\S]*?)</span>([\s\S]*?)</td>', x).groups())
+    print(result)
+    lin = Lin(url_prefix + re.search(r'<A HREF="(.*)">Lin</A>', x).group(1), result)
+    lin.fetch_file(conn)
+    lins.append(lin)
+    # to avoid bbo's anti-scraping rule
+    # sleeping to reduce http error 503
+    time.sleep(5)

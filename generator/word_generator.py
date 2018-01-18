@@ -71,6 +71,7 @@ def handlelin(filePath):
     line = f.readlines()
     f.close()
 
+    # no mre results
     results = str.replace(re.match(r"^rs\|(.+),\|$", line[1]).group(1), ',,', ',').split(r",")
 
     try:
@@ -113,8 +114,7 @@ def handlelin(filePath):
             if flag == "2":
                 flag1 = 0
 
-            # key arithmetic we need count the tableNO to focus the correct
-            # table
+            # key arithmetic we need count the tableNO to focus the correct table
             # table and reusltNum differentiate
             resultNum = int(re.match(r'^o(\d+)', string0).group(1)) - 1
             tnum = getAvailableTable(doc, resultNum)
@@ -255,13 +255,13 @@ def genWord():
     print("file was copied")
 
 
-def linsValid():
-    for i in FILES:
-        if endWith(i, '.lin'):
-            return True
+def linsValid(linFiles):
+    for i in linFiles:
+        if not endWith(i, '.lin'):
+            return False
         else:
             continue
-    return False
+    return True
 
 
 # files=glob.glob(r"C:\*.lin")
@@ -281,24 +281,23 @@ def backupFile(filePath):
     print('file was copied')
 
 
-# # Main
-# tableCount = 1
-# boardsCount = 20
-#
-# # first check the lins valid
-# if not linsValid():
-#     print("error!we need a .lin file")
-#     input("Press Enter to quit:")
-#     quit()
-# # secondly choose a template and make a copy
-# genWord()
-# linFiles = glob.glob(get_desktop() + r"\*.lin")
-# firstFile = linFiles[0]
-# # data record
-# record = []
+# Main
+tableCount = 1
+boardsCount = 20
+
+linpath = sys.path[0] + r'\files\*.lin'
+linFiles = glob.glob(linpath)
+if not linsValid(linFiles):
+    print("error!we need at least 1 *.lin file")
+    input("Press Enter to quit:")
+    quit()
+
+genWord()
+# changed for scraping data
+firstFile = linFiles[0]
+# data record
+record = []
+handlelin(firstFile)
 # handlelin(firstFile)
-# # handlelin(firstFile)
-# print(r"Finished!")
-# input()
-
-
+print(r"Finished!")
+input()
