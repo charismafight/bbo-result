@@ -1,18 +1,18 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import win32com
-import pythoncom
-from win32com.client import Dispatch, constants
+import glob
 import os
 import re
-import glob
-import sys
 import shutil
 import winreg
-import time
-import threading
 from turtle import *
-from time import ctime, sleep
+import sys
+import time
+
+import pythoncom
+import win32com
+from win32com.client import Dispatch
+
 from generator import fetcher
 
 
@@ -37,6 +37,13 @@ RESULTPATH = CURRENT_FOLDER + r"\results\Result.docx"
 # lin file path should be modified ***********************************************
 REGSTR1 = r"pn\|(.+)\|md\|(\d)(.+)\|sv\|(\w)\|rh\|\|ah\|(Board\s\d+)\|mb\|(.+)\|mb\|p\|mb\|p\|mb\|p\|pg\|\|$"
 REGSTR2 = r"pn\|(.+)\|st\|.*\|md\|(\d)(.+)\|rh\|(.*)\|ah\|(.+)\|sv\|(\w)\|mb\|(.+)\|mb\|p\|mb\|p\|mb\|p\|pg\|\|pc\|(.+)\|(pg\|\||mc\|[\s\S]{1,2}\|)$"
+
+SUIT = {
+    '&spades;': '\u2660',
+    '&clubs;': '\u2666',
+    '&diams;': '\u2663',
+    '&hearts;': '\u2665',
+}
 
 
 def sortstr(str11):
@@ -172,14 +179,8 @@ def handlelin(file_path):
             ecards_c = "".join([i for i in list("AKQJT98765432") if i not in list(scards_c) + list(wcards_c) + list(ncards_c)])
             doc.Tables[tnum].Rows[7].Cells[2].Range.Text = u"\u2663 " + sortstr(ecards_c)
 
-            # ecards_s = "".join([i for i in list("AKQJT98765432") if i not in list(scards_s) + list(wcards_s) + list(ncards_s)])
-            # doc.Tables[tnum].Rows[4].Cells[2].Range.Text = u"\u2660 " + sortstr(ecards_s)
-            # ecards_h = "".join([i for i in list("AKQJT98765432") if i not in list(scards_h) + list(wcards_h) + list(ncards_h)])
-            # doc.Tables[tnum].Rows[5].Cells[2].Range.Text = u"\u2665 " + sortstr(ecards_h)
-            # ecards_d = "".join([i for i in list("AKQJT98765432") if i not in list(scards_d) + list(wcards_d) + list(ncards_d)])
-            # doc.Tables[tnum].Rows[6].Cells[2].Range.Text = u"\u2666 " + sortstr(ecards_d)
-            # ecards_c = "".join([i for i in list("AKQJT98765432") if i not in list(scards_c) + list(wcards_c) + list(ncards_c)])
-            # doc.Tables[tnum].Rows[7].Cells[2].Range.Text = u"\u2663 " + sortstr(ecards_c)
+            for r in SUIT.items():
+                results[result_num] = results[result_num].replace(r[0], r[1])
             doc.Tables[tnum].Rows[16].Cells[0].Range.Text = r"Result: " + results[result_num]
             doc.Tables[tnum].Rows[0].Cells[0].Range.Text = board
             trick = string7.split(r"|pg||pc|")
@@ -244,6 +245,7 @@ def handlelin(file_path):
 def genWord():
     # template file name rule:form_tableCount_boardCount.docx
     formdoc = CURRENT_FOLDER + r"\template" + r"\form_practice.docx"
+    # formdoc = cur_file_dir() + "\\" + r"form_" + str(tableCount) + "_" + str(boardsCount) + r".docx"
     print("checking form_practice.docx")
     if not os.path.exists(formdoc):
         print("cant find template word??" + formdoc)
@@ -302,8 +304,9 @@ genWord()
 record = []
 # generate files by bbo_id
 for x in players:
-    file_path = dir_path + "\\{}.lin".format(x)
-    result = fetcher.fetch(file_path)
+    # file_path = dir_path + "\\{}.lin".format(x)
+    file_path = r'G:\github_projects\bbo-result\generator\files\201801191003\eve8392.lin'
+    # fetcher.fetch(file_path)
     handlelin(file_path)
 print(r"Finished!")
 input()

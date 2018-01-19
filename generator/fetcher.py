@@ -10,7 +10,7 @@ from generator.lin import *
 
 def fetch(file_path):
     """
-        fetch game results and return a directory contains lin files
+    fetch game results and return a directory contains lin files
     :param file_path: path of the file
     :return: path of lin files where contains the *.lin
     """
@@ -84,4 +84,4 @@ def fetch(file_path):
     with open(file_path, 'w') as f:
         f.writelines(map(str, lins))
     with open(file_path.replace('lin', 'result'), 'w') as f:
-        f.writelines(results)
+        f.writelines('\n'.join(results))
