@@ -8,9 +8,13 @@ import sys
 from generator.lin import *
 
 
-def fetch(file_path):
+def fetch(file_path, player_name, start_time, end_time, game_key_word):
     """
     fetch game results and return a directory contains lin files
+    :param player_name:
+    :param start_time:
+    :param end_time:
+    :param game_key_word:
     :param file_path: path of the file
     :return: path of lin files where contains the *.lin
     """
@@ -25,8 +29,8 @@ def fetch(file_path):
     post_data = {
         't': '/myhands/index.php?',
         'count': 1,
-        'username': 'eve8392',
-        'password': '19920126',
+        'username': 'leeeesama',
+        'password': '860807',
         'submit': 'Login',
         'keep': 'on',
     }
@@ -40,23 +44,24 @@ def fetch(file_path):
     }
     conn.post(hands_url, data=hands_data)
 
-    start_time = int(time.mktime(time.strptime('2017-11-25', '%Y-%m-%d')))
-    end_time = int(time.mktime(time.strptime('2017-12-25', '%Y-%m-%d')))
-    url = 'http://www.bridgebase.com/myhands/hands.php?username=eve8392&start_time={}&end_time={}'.format(start_time, end_time)
+    # paras
+    # start_time = int(time.mktime(time.strptime('2017-11-25', '%Y-%m-%d')))
+    # end_time = int(time.mktime(time.strptime('2017-12-25', '%Y-%m-%d')))
+    url = 'http://www.bridgebase.com/myhands/hands.php?username={}&start_time={}&end_time={}'.format(player_name, start_time, end_time)
     data = conn.get(url).content.decode()
     GAME_REG = r'<tr class="tourneySummary">([\s\S]*?)(<tr>[\s\S]*?<th colspan="11">[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}</th>[\s\S]*?</tr>|<tr class="even">)'
     # find games
     games = re.findall(GAME_REG, data)
-    # find Orange
-    orange_game = list(filter(lambda x: 'Orange' in x[0], games))
-    if orange_game and len(orange_game) == 1:
-        print('orange game found')
+    # find game
+    game = list(filter(lambda x: game_key_word in x[0], games))
+    if game and len(game) == 1:
+        print('{} game found'.format(game_key_word))
     else:
-        print('error,0 or over 2 orange games found,please check searching conditions')
+        print('error,0 or over 2 {} games found,please check searching conditions'.format(game_key_word))
         input()
         exit(0)
 
-    rows = re.findall(r'<tr class="team">([\w\W]*?)</tr>', orange_game[0][0])
+    rows = re.findall(r'<tr class="team">([\w\W]*?)</tr>', game[0][0])
     url_prefix = 'http://www.bridgebase.com/myhands/'
     lins = []
     results = []
@@ -74,6 +79,7 @@ def fetch(file_path):
                 exit(0)
         results.append(result)
         lin = Lin(url_prefix + re.search(r'<A HREF="(.*)">Lin</A>', x).group(1), result)
+        print('fetching board:')
         lin.fetch_file(conn)
         lins.append(lin)
         # to avoid bbo's anti-scraping rule

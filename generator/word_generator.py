@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+import datetime
 import glob
 import os
 import re
@@ -17,7 +18,7 @@ from generator import fetcher
 
 CURRENT_FOLDER = sys.path[0]
 run_time_str = time.strftime('%Y%m%d%H%M', time.localtime(time.time()))
-RESULTPATH = CURRENT_FOLDER + r"\results\Result{}.docx".format(run_time_str)
+RESULTPATH = os.path.join(CURRENT_FOLDER, "results", "Result{}.docx".format(run_time_str))
 REGSTR2 = r"pn\|(.+)\|st\|.*\|md\|(\d)(.+)\|rh\|(.*)\|ah\|(.+)\|sv\|(\w)\|mb\|(.+)\|mb\|p\|mb\|p\|mb\|p\|pg\|\|pc\|(.+)\|(pg\|\||mc\|[\s\S]{1,2}\|)$"
 SUIT = {
     '&spades;': '\u2660',
@@ -28,10 +29,12 @@ SUIT = {
 
 
 # prepare directories
+
+
 def init():
     paths = [
-        sys.path[0] + "\\files\\" + run_time_str,
-        CURRENT_FOLDER + "\\results\\"
+        os.path.join(sys.path[0], "files", run_time_str),
+        os.path.join(CURRENT_FOLDER, "results"),
     ]
 
     for path in paths:
@@ -90,6 +93,7 @@ def handlelin(file_path):
             if s in record:
                 print("repeated data,pass!")
                 continue
+            s = s.replace("\n", '')
             player_str = re.match(REGSTR2, s).group(1)
             flag = re.match(REGSTR2, s).group(2)
             cards = re.match(REGSTR2, s).group(3)
@@ -239,17 +243,6 @@ def gen_word(table_count, boards_count):
     print("valid")
 
 
-def validate_lin():
-    for i in glob.glob(CURRENT_FOLDER + r'\files\*.lin'):
-        if not end_with(i, '.lin'):
-            print("error!we need at least 1 *.lin file")
-            input("Press Enter to quit:")
-            quit()
-        else:
-            continue
-    print('lin file is valid')
-
-
 # files=glob.glob(r"C:\*.lin")
 # print(r"Total: "+str(len(files))+r"files")
 # for ini_file in files:
@@ -262,26 +255,35 @@ def end_with(s, *endstring):
 
 
 def backup(path):
-    shutil.move(path, CURRENT_FOLDER + '\\' + time.strftime('%Y%m%d%H%M%S', time.localtime(time.time())) + ".lin")
+    # shutil.move(path, CURRENT_FOLDER + '/' + time.strftime('%Y%m%d%H%M%S', time.localtime(time.time())) + ".lin")
     print('file was copied')
 
 
-# Main
-tableCount = 1
-boardsCount = 20
+def mktime(t):
+    return int(time.mktime(t))
 
+
+# Main
+init()
+tableCount = 2
+boardsCount = 20
+# todo
 # tableCount = int(input("Please input table count:"))
 # boardsCount = int(input("Please input boards count:"))
-validate_lin()
+start_time = datetime.datetime.strptime(input('Please input when the game start(eg:20180101):'), '%Y%m%d')
+end_time = start_time + datetime.timedelta(days=1) - datetime.timedelta(seconds=1)
+game_key_word = 'Orange'
+# todo to be delete or optimize into loop
 gen_word(tableCount, boardsCount)
 # data record
 record = []
 # generate files by bbo_id
 players = open('bbo_id').readlines()
 for x in players:
-    # p = dir_path + "\\{}.lin".format(x)
-    p = r'D:\pycharm_projects\bbo-result\generator\files\201801191003\eve8392.lin'
-    # fetcher.fetch(p)
+    x = x.strip('\n')
+    p = os.path.join(CURRENT_FOLDER, 'files', run_time_str, "{}.lin".format(x))
+    # todo gamekeyword
+    fetcher.fetch(p, x, mktime(start_time.timetuple()), mktime(end_time.timetuple()), 'Untitled')
     handlelin(p)
 print(r"Finished!Press Enter to close window.")
 input()
