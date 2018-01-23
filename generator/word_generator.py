@@ -15,35 +15,28 @@ from win32com.client import Dispatch
 
 from generator import fetcher
 
-
-def get_desktop():
-    key = winreg.OpenKey(
-        winreg.HKEY_CURRENT_USER, r'Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders', )
-    return winreg.QueryValueEx(key, "Desktop")[0]
-
-
-def cur_file_dir():
-    path = sys.path[0]
-    if os.path.isdir(path):
-        return path
-
-    elif os.path.isfile(path):
-        return os.path.dirname(path)
-
-
-CURRENT_FOLDER = cur_file_dir()
-# todo set file name as yyyymmddhhmm.docx
-RESULTPATH = CURRENT_FOLDER + r"\results\Result.docx"
-# lin file path should be modified ***********************************************
-REGSTR1 = r"pn\|(.+)\|md\|(\d)(.+)\|sv\|(\w)\|rh\|\|ah\|(Board\s\d+)\|mb\|(.+)\|mb\|p\|mb\|p\|mb\|p\|pg\|\|$"
+CURRENT_FOLDER = sys.path[0]
+run_time_str = time.strftime('%Y%m%d%H%M', time.localtime(time.time()))
+RESULTPATH = CURRENT_FOLDER + r"\results\Result{}.docx".format(run_time_str)
 REGSTR2 = r"pn\|(.+)\|st\|.*\|md\|(\d)(.+)\|rh\|(.*)\|ah\|(.+)\|sv\|(\w)\|mb\|(.+)\|mb\|p\|mb\|p\|mb\|p\|pg\|\|pc\|(.+)\|(pg\|\||mc\|[\s\S]{1,2}\|)$"
-
 SUIT = {
     '&spades;': '\u2660',
-    '&clubs;': '\u2666',
-    '&diams;': '\u2663',
     '&hearts;': '\u2665',
+    '&diams;': '\u2663',
+    '&clubs;': '\u2666',
 }
+
+
+# prepare directories
+def init():
+    paths = [
+        sys.path[0] + "\\files\\" + run_time_str,
+        CURRENT_FOLDER + "\\results\\"
+    ]
+
+    for path in paths:
+        if not os.path.exists(path):
+            os.makedirs(path)
 
 
 def sortstr(str11):
@@ -58,17 +51,17 @@ def sortstr(str11):
         return str11
 
 
-def getAvailableTable(doc, boardNO):
+def get_available_table(doc, board_no):
     # where the data should be in 1st column
-    defaultTbNO = boardNO * tableCount
+    default_table_no = board_no * tableCount
     # boardsCount -1 is the max []index
     for i in range(0, tableCount):
-        if r"Open" in doc.Tables[defaultTbNO].Rows[1].Cells[0].Range.Text:
-            defaultTbNO = defaultTbNO + 1
+        if r"Open" in doc.Tables[default_table_no].Rows[1].Cells[0].Range.Text:
+            default_table_no = default_table_no + 1
             continue
         else:
-            doc.Tables[defaultTbNO].Rows[1].Cells[0].Range.Text = r"Open"
-            return defaultTbNO
+            doc.Tables[default_table_no].Rows[1].Cells[0].Range.Text = r"Open"
+            return default_table_no
     return -1
 
     # path:output file
@@ -76,6 +69,9 @@ def getAvailableTable(doc, boardNO):
 
 def handlelin(file_path):
     # according to the user input table count
+    if not os.path.exists(file_path):
+        print('can\'t file lin file')
+        quit(0)
     f = open(file_path)
     lines = f.readlines()
     f.close()
@@ -94,17 +90,6 @@ def handlelin(file_path):
             if s in record:
                 print("repeated data,pass!")
                 continue
-            # if re.match(REGSTR1, s):
-            #     # string0 = re.match(REGSTR1, s).group(1)
-            #     # string1 = re.match(REGSTR1, s).group(2)
-            #     # flag = re.match(REGSTR1, s).group(3)
-            #     # string3 = re.match(REGSTR1, s).group(4)
-            #     # board = re.match(REGSTR1, s).group(6)
-            #     # vul = re.match(REGSTR1, s).group(6)
-            #     # string6 = re.match(REGSTR1, s).group(7)
-            #     # string7 = ""
-            #     pass
-            # else:
             player_str = re.match(REGSTR2, s).group(1)
             flag = re.match(REGSTR2, s).group(2)
             cards = re.match(REGSTR2, s).group(3)
@@ -122,9 +107,9 @@ def handlelin(file_path):
             if flag == "2":
                 flag1 = 0
 
-            # key arithmetic we need count the tableNO to focus the correct table
-            # table and reusltNum differentiate
-            tnum = getAvailableTable(doc, result_num)
+            # key arithmetic we need count the table number to focus the correct table
+            # table and result differentiate
+            tnum = get_available_table(doc, result_num)
 
             if tnum == -1:
                 continue
@@ -242,32 +227,33 @@ def handlelin(file_path):
         # backupFile(firstFile)
 
 
-def genWord():
+def gen_word(table_count, boards_count):
     # template file name rule:form_tableCount_boardCount.docx
-    formdoc = CURRENT_FOLDER + r"\template" + r"\form_practice.docx"
-    # formdoc = cur_file_dir() + "\\" + r"form_" + str(tableCount) + "_" + str(boardsCount) + r".docx"
-    print("checking form_practice.docx")
+    formdoc = CURRENT_FOLDER + r"\template\form_" + str(table_count) + "_" + str(boards_count) + r".docx"
+    print("checking " + formdoc)
     if not os.path.exists(formdoc):
-        print("cant find template word??" + formdoc)
+        print("can't find template word:" + formdoc)
         input("Press Enter to quit:")
         quit()
     shutil.copyfile(formdoc, RESULTPATH)
-    print("done")
+    print("valid")
 
 
-def linsValid(linFiles):
-    for i in linFiles:
-        if not endWith(i, '.lin'):
-            return False
+def validate_lin():
+    for i in glob.glob(CURRENT_FOLDER + r'\files\*.lin'):
+        if not end_with(i, '.lin'):
+            print("error!we need at least 1 *.lin file")
+            input("Press Enter to quit:")
+            quit()
         else:
             continue
-    return True
+    print('lin file is valid')
 
 
 # files=glob.glob(r"C:\*.lin")
 # print(r"Total: "+str(len(files))+r"files")
 # for ini_file in files:
-def endWith(s, *endstring):
+def end_with(s, *endstring):
     array = map(s.endswith, endstring)
     if True in array:
         return True
@@ -275,8 +261,8 @@ def endWith(s, *endstring):
         return False
 
 
-def backupFile(filePath):
-    shutil.move(filePath, "C:\\form_pairs\\historyLin\\" + time.strftime('%Y%m%d%H%M%S', time.localtime(time.time())) + ".lin")
+def backup(path):
+    shutil.move(path, CURRENT_FOLDER + '\\' + time.strftime('%Y%m%d%H%M%S', time.localtime(time.time())) + ".lin")
     print('file was copied')
 
 
@@ -286,27 +272,16 @@ boardsCount = 20
 
 # tableCount = int(input("Please input table count:"))
 # boardsCount = int(input("Please input boards count:"))
-
-players = open('bbo_id').readlines()
-dir_path = sys.path[0] + "\\files\\" + time.strftime('%Y%m%d%H%M', time.localtime(time.time()))
-if not os.path.exists(dir_path):
-    os.makedirs(dir_path)
-
-lin_path = CURRENT_FOLDER + r'\files\*.lin'
-linFiles = glob.glob(lin_path)
-if not linsValid(linFiles):
-    print("error!we need at least 1 *.lin file")
-    input("Press Enter to quit:")
-    quit()
-
-genWord()
+validate_lin()
+gen_word(tableCount, boardsCount)
 # data record
 record = []
 # generate files by bbo_id
+players = open('bbo_id').readlines()
 for x in players:
-    # file_path = dir_path + "\\{}.lin".format(x)
-    file_path = r'G:\github_projects\bbo-result\generator\files\201801191003\eve8392.lin'
-    # fetcher.fetch(file_path)
-    handlelin(file_path)
-print(r"Finished!")
+    # p = dir_path + "\\{}.lin".format(x)
+    p = r'D:\pycharm_projects\bbo-result\generator\files\201801191003\eve8392.lin'
+    # fetcher.fetch(p)
+    handlelin(p)
+print(r"Finished!Press Enter to close window.")
 input()

@@ -1,4 +1,4 @@
-This is a tool for export bbo results(lin files)
+This is a tool for export [bbo results](http://www.bridgebase.com/myhands/index.php?&from_login=0)(lin files)
 
 [lin file structure](http://www.bridgebase.com/help/v2help/handviewer.html)
 
