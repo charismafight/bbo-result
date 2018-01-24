@@ -1,12 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 import datetime
-import glob
 import os
 import re
 import shutil
-import winreg
-from turtle import *
 import sys
 import time
 
@@ -19,7 +16,7 @@ from generator import fetcher
 CURRENT_FOLDER = sys.path[0]
 run_time_str = time.strftime('%Y%m%d%H%M', time.localtime(time.time()))
 RESULTPATH = os.path.join(CURRENT_FOLDER, "results", "Result{}.docx".format(run_time_str))
-REGSTR2 = r"pn\|(.+)\|st\|.*\|md\|(\d)(.+)\|rh\|(.*)\|ah\|(.+)\|sv\|(\w)\|mb\|(.+)\|mb\|p\|mb\|p\|mb\|p\|pg\|\|pc\|(.+)\|(pg\|\||mc\|[\s\S]{1,2}\|)$"
+RESTR = r"pn\|(.+)\|st\|.*\|md\|(\d)(.+)\|rh\|(.*)\|ah\|(.+)\|sv\|(\w)\|mb\|(.+)\|mb\|p\|mb\|p\|mb\|p\|(pg\|\|pc\|)*(.*)\|*(pg\|\||mc\|[\s\S]{1,2}\|)*$"
 SUIT = {
     '&spades;': '\u2660',
     '&hearts;': '\u2665',
@@ -94,13 +91,13 @@ def handlelin(file_path):
                 print("repeated data,pass!")
                 continue
             s = s.replace("\n", '')
-            player_str = re.match(REGSTR2, s).group(1)
-            flag = re.match(REGSTR2, s).group(2)
-            cards = re.match(REGSTR2, s).group(3)
-            board = re.match(REGSTR2, s).group(5)
-            vul = re.match(REGSTR2, s).group(6)
-            string6 = re.match(REGSTR2, s).group(7)
-            string7 = re.match(REGSTR2, s).group(8)
+            player_str = re.match(RESTR, s).group(1)
+            flag = re.match(RESTR, s).group(2)
+            cards = re.match(RESTR, s).group(3)
+            board = re.match(RESTR, s).group(5)
+            vul = re.match(RESTR, s).group(6)
+            string6 = re.match(RESTR, s).group(7)
+            string7 = re.match(RESTR, s).group(9)
 
             if flag == "3":
                 flag1 = 1
@@ -119,11 +116,8 @@ def handlelin(file_path):
                 continue
 
             players = player_str.split(r",")
-            # while "" in players:
-            #    players.remove("")
             for i in range(len(players)):
                 doc.Tables[tnum].Rows[12].Cells[i].Range.Text = players[(i + 1) % 4]
-                # empty valid
                 if players[(i + 1) % 4] == '':
                     pass
                 else:
@@ -240,23 +234,7 @@ def gen_word(table_count, boards_count):
         input("Press Enter to quit:")
         quit()
     shutil.copyfile(formdoc, RESULTPATH)
-    print("valid")
-
-
-# files=glob.glob(r"C:\*.lin")
-# print(r"Total: "+str(len(files))+r"files")
-# for ini_file in files:
-def end_with(s, *endstring):
-    array = map(s.endswith, endstring)
-    if True in array:
-        return True
-    else:
-        return False
-
-
-def backup(path):
-    # shutil.move(path, CURRENT_FOLDER + '/' + time.strftime('%Y%m%d%H%M%S', time.localtime(time.time())) + ".lin")
-    print('file was copied')
+    print("pass,file was copied")
 
 
 def mktime(t):
@@ -265,15 +243,19 @@ def mktime(t):
 
 # Main
 init()
-tableCount = 2
-boardsCount = 20
-# todo
-# tableCount = int(input("Please input table count:"))
-# boardsCount = int(input("Please input boards count:"))
+# tableCount = 2
+# boardsCount = 20
+tableCount = int(input("Please input table count:"))
+boardsCount = int(input("Please input boards count:"))
 start_time = datetime.datetime.strptime(input('Please input when the game start(eg:20180101):'), '%Y%m%d')
 end_time = start_time + datetime.timedelta(days=1) - datetime.timedelta(seconds=1)
+end_time_input = input("Please input when the game end(eg:20180101,default:start_time 23:59:59):")
+if end_time_input.strip() != '':
+    end_time = datetime.datetime.strptime(end_time_input, '%Y%m%d')
 game_key_word = 'Orange'
-# todo to be delete or optimize into loop
+kw_input = input("Please input the keyword of the game(default:Orange):")
+if kw_input.strip() != '':
+    game_key_word = kw_input
 gen_word(tableCount, boardsCount)
 # data record
 record = []
@@ -282,8 +264,7 @@ players = open('bbo_id').readlines()
 for x in players:
     x = x.strip('\n')
     p = os.path.join(CURRENT_FOLDER, 'files', run_time_str, "{}.lin".format(x))
-    # todo gamekeyword
-    fetcher.fetch(p, x, mktime(start_time.timetuple()), mktime(end_time.timetuple()), 'Untitled')
+    fetcher.fetch(p, x, mktime(start_time.timetuple()), mktime(end_time.timetuple()), game_key_word)
     handlelin(p)
 print(r"Finished!Press Enter to close window.")
 input()

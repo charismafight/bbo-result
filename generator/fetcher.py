@@ -3,7 +3,6 @@ import time
 import os
 import requests
 import re
-import sys
 
 from generator.lin import *
 
@@ -12,9 +11,9 @@ def fetch(file_path, player_name, start_time, end_time, game_key_word):
     """
     fetch game results and return a directory contains lin files
     :param player_name:
-    :param start_time:
-    :param end_time:
-    :param game_key_word:
+    :param start_time:ymd format
+    :param end_time:the same format as start_time
+    :param game_key_word:to find the game
     :param file_path: path of the file
     :return: path of lin files where contains the *.lin
     """
@@ -79,12 +78,12 @@ def fetch(file_path, player_name, start_time, end_time, game_key_word):
                 exit(0)
         results.append(result)
         lin = Lin(url_prefix + re.search(r'<A HREF="(.*)">Lin</A>', x).group(1), result)
-        print('fetching board:')
+        print("fetching {}'s board {}:".format(player_name, i + 1))
         lin.fetch_file(conn)
         lins.append(lin)
         # to avoid bbo's anti-scraping rule
         # sleeping to reduce http error 503
-        time.sleep(4)
+        time.sleep(5)
 
     # with open(sys.path[0] + "\\files\\" + time.strftime('%Y%m%d%H%M', time.localtime(time.time())) + ".lin", 'w') as f:
     with open(file_path, 'w') as f:
