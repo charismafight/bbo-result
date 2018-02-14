@@ -60,7 +60,13 @@ def fetch(file_path, player_name, start_time, end_time, game_key_word):
         input()
         exit(0)
 
+    # class=team & class=tourney maybe there is another class of Main Bridge Club hands
     rows = re.findall(r'<tr class="team">([\w\W]*?)</tr>', game[0][0])
+    if not rows:
+        rows=re.findall(r'<tr class="tourney">([\w\W]*?)</tr>', game[0][0])
+
+    if not rows:
+        raise Exception("can't find class=team or class=tourney rows")
     url_prefix = 'http://www.bridgebase.com/myhands/'
     lins = []
     results = []
